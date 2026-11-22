@@ -6,7 +6,8 @@
 
 This repository provides the complete, verifiable, and reproducible implementation for the research paper:  
 **"Communication-Efficient Cooperative Multi-Agent Reinforcement Learning Under an Average Bit Budget"**  
-*Department of Computer Science and Engineering, IIT Gandhinagar*
+*Department of Computer Science and Engineering, IIT Gandhinagar*  
+**Repository**: [https://github.com/Suchith2212/MARL](https://github.com/Suchith2212/MARL)
 
 ---
 
