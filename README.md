@@ -179,7 +179,18 @@ with open("results/rq1_analysis.json") as f:
 
 ---
 
-## 8. License & Citation
+## 8. Overleaf Compilation Instructions
+
+To compile the manuscript in Overleaf:
+1. Create a new Blank Project in [Overleaf](https://www.overleaf.com/).
+2. Upload `report.tex` into the project root directory.
+3. Upload the image files from the `figures/` directory (you can upload the entire `figures/` folder or drag the individual `.png` files into the root).
+4. `report.tex` configures `\graphicspath{{./}{figures/}{results/figures/}}`, ensuring all figures resolve cleanly under standard `pdfLaTeX`.
+5. Click **Recompile** to generate the 8-page publication PDF.
+
+---
+
+## 9. License & Citation
 
 This project is licensed under the MIT License.
 ```bibtex
