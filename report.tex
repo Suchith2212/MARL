@@ -12,6 +12,8 @@
 \usepackage{microtype}
 \usepackage{xcolor}
 
+\graphicspath{{./}{figures/}{results/figures/}}
+
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
@@ -96,7 +98,7 @@ Our framework utilizes a vectorized, batched MAPPO backbone operating on a conti
 
 \begin{figure*}[t]
     \centering
-    \includegraphics[width=0.95\textwidth]{results/figures/rq1_rq2_learned_precision.png}
+    \includegraphics[width=0.95\textwidth]{rq1_rq2_learned_precision.png}
     \caption{\textbf{Primary Empirical Results.} \textit{Left}: Episode return vs. measured communication cost ($\bar{C}$) across budgets $B \in \{8, 16, 32, 64\}$ bits/step (5 seeds, 2,000,000 steps/run). The fixed-width envelope (dashed lines) strictly outperforms dynamic learned precision (black stars) across all costs. \textit{Right}: Learned bit-width allocation across target budgets, showing adaptive shift from 1-bit and 2-bit communication at tight budgets to 4-bit and 8-bit precision at higher budgets.}
     \label{fig:rq1_main}
 \end{figure*}
@@ -230,16 +232,42 @@ All methods are benchmarked against frozen baseline endpoints evaluated over 1,0
 
 \subsection{Phase 1 Screening Checks}
 \paragraph{Competence Gate 0}: Full-observation MAPPO achieved static return $+0.890$ ($\text{score} = 1.008$) and dynamic return $-3.504$ ($\text{score} = 0.819$), comfortably exceeding the $\ge 0.50$ threshold.
-\paragraph{Check 1 (Communication Necessity)}: Full-communication MAPPO ($-4.639 \pm 0.380$) achieved an unclipped return advantage of $\mathbf{+11.300}$ over no-communication ($-15.939 \pm 0.052$). The paired-seed $95\%$ CI was $[+10.74, +11.86]$, with normalized score $0.820 > 0.10$.
-\paragraph{Check 2 (Precision Sensitivity)}: Tracking returns scaled monotonically with precision ($b=1: -7.137; b=2: -4.344; b=4: -3.724; b=8: -3.721$). The Spearman rank correlation on per-seed data was $\rho = 0.812$ ($p = 4.2 \times 10^{-6}$). Pairwise Holm-Bonferroni tests confirmed $b=1$ is significantly worse than all $b \ge 2$ ($p < 0.03$), $b=4$ significantly beats $b=2$ ($p=0.033$), while $b=8$ and $b=4$ are statistically indistinguishable ($\Delta = +0.0025, p_{\mathrm{Holm}} = 0.897$).
+\paragraph{Check 1 (Communication Necessity)}: Full-communication MAPPO ($-4.639 \pm 0.380$) achieved an unclipped return advantage of $\mathbf{+11.300}$ over no-communication ($-15.939 \pm 0.052$). The paired-seed $95\%$ CI was $[+10.74, +11.86]$, with normalized score $0.820 > 0.10$ (Fig.~\ref{fig:check1}).
+\paragraph{Check 2 (Precision Sensitivity)}: Tracking returns scaled monotonically with precision ($b=1: -7.137; b=2: -4.344; b=4: -3.724; b=8: -3.721$). The Spearman rank correlation on per-seed data was $\rho = 0.812$ ($p = 4.2 \times 10^{-6}$). Pairwise Holm-Bonferroni tests confirmed $b=1$ is significantly worse than all $b \ge 2$ ($p < 0.03$), $b=4$ significantly beats $b=2$ ($p=0.033$), while $b=8$ and $b=4$ are statistically indistinguishable ($\Delta = +0.0025, p_{\mathrm{Holm}} = 0.897$, Fig.~\ref{fig:check2}).
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.48\columnwidth}
+        \centering
+        \includegraphics[width=\textwidth]{check1_results.png}
+        \caption{Check 1: Necessity.}
+        \label{fig:check1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\columnwidth}
+        \centering
+        \includegraphics[width=\textwidth]{check2_results.png}
+        \caption{Check 2: Sensitivity.}
+        \label{fig:check2}
+    \end{subfigure}
+    \caption{\textbf{Phase 1 Screening Verification.} (a) Check 1 confirms communication necessity with $+11.300$ return gain over no-comm. (b) Check 2 confirms precision sensitivity with monotonic performance scaling across $\mathcal{W}=\{1, 2, 4, 8\}$ ($\rho = 0.812, p < 10^{-5}$).}
+    \label{fig:screening}
+\end{figure}
 
 \subsection{Phase 2 Fixed-Width Pareto Envelope}
-Table \ref{tab:main_results} presents the full 80-run baseline grid. The fixed-width Pareto envelope partitions into distinct regimes:
+Table \ref{tab:main_results} presents the full 80-run baseline grid, visualized in Fig.~\ref{fig:phase2_envelope}. The fixed-width Pareto envelope partitions into distinct regimes:
 \begin{itemize}
     \item \textbf{Low-Cost Regime ($\bar{C} \approx 6.5$ bits/step)}: 1-bit communication ($b=1$) strictly dominates ($\text{Return} = -11.188$). Higher widths incur excessive packet sizes ($128$ bits for $b=8$), forcing gates closed for 15 out of 16 steps and causing severe drift ($-19.466$).
     \item \textbf{Mid-Cost Regime ($\bar{C} \approx 15.2$ bits/step)}: 2-bit communication ($b=2$) strictly dominates, reaching return $\mathbf{-4.909 \pm 0.392}$, outperforming $b=1$ ($-7.137$), $b=4$ ($-14.470$), and $b=8$ ($-16.071$).
     \item \textbf{High-Cost Regime ($\bar{C} \ge 30$ bits/step)}: 4-bit communication ($b=4$) achieves global optimality ($\text{Return} = \mathbf{-3.724 \pm 0.123}$ at $\bar{C} = 43.90$), reaching near-oracle performance ($0.887$ normalized score).
 \end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\columnwidth]{phase2_envelope_results.png}
+    \caption{\textbf{Phase 2 Fixed-Width Baseline Grid and Pareto Envelope.} Episode return vs. measured cost across all 80 runs (4 widths $\times$ 4 budgets $\times$ 5 seeds). Lower widths ($b=1, b=2$) dominate low-cost regimes, while $b=4$ reaches near-oracle tracking at high budgets.}
+    \label{fig:phase2_envelope}
+\end{figure}
 
 \subsection{Matched-Cost Open-Loop Benchmarks}
 Table \ref{tab:open_loop} documents the 50-run matched-cost baseline experiment comparing closed-loop Primal-Dual gating against open-loop Periodic and Random gating across the Pareto envelope configurations.
