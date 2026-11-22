@@ -1,0 +1,21 @@
+{
+  "mode": "primal_dual",
+  "bw": 2,
+  "budget": 32,
+  "seed": 43,
+  "eval": {
+    "return_mean": -3.9449400901794434,
+    "return_std": 12.119709968566895,
+    "cost_mean": 21.62944221496582,
+    "cost_std": 2.112705945968628,
+    "cost_error": -0.3240799307823181,
+    "score_lead": 0.869301948574986,
+    "violation_count": 0,
+    "nu": 0.0,
+    "wilson_ci": [
+      2.168404344971009e-19,
+      0.0038267584855551234
+    ]
+  },
+  "final_lambda": 0.0
+}

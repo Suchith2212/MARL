@@ -1,0 +1,28 @@
+16.0:
+  mean_final_lambda: 0.23789970314899406
+  mean_plain_C_bar: 32.56319993019103
+  mean_realized_C: 32.44151964187622
+  mean_return: -57.03953220958167
+  std_return: 16.90578388826035
+  violation_rate_nu: 0.55
+32.0:
+  mean_final_lambda: 0.17836153812319328
+  mean_plain_C_bar: 36.30080014228821
+  mean_realized_C: 36.39007790088654
+  mean_return: -49.31069745221589
+  std_return: 10.536838639548487
+  violation_rate_nu: 0.43
+64.0:
+  mean_final_lambda: 0.07256071001469873
+  mean_plain_C_bar: 62.36160001277924
+  mean_realized_C: 62.290315523147584
+  mean_return: -53.09651569075495
+  std_return: 20.299201256003975
+  violation_rate_nu: 0.35
+128.0:
+  mean_final_lambda: 0.0
+  mean_plain_C_bar: 74.85440001010895
+  mean_realized_C: 74.87565973043442
+  mean_return: -54.7821931666587
+  std_return: 18.525253469911373
+  violation_rate_nu: 0.06

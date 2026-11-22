@@ -1,0 +1,20 @@
+{
+  "mode": "random",
+  "bw": 4,
+  "budget": 64,
+  "seed": 45,
+  "eval": {
+    "return_mean": -4.249577522277832,
+    "return_std": 11.213747024536133,
+    "cost_mean": 64.0,
+    "cost_std": 0.0,
+    "cost_error": 0.0,
+    "score_lead": 0.8476715104402083,
+    "violation_count": 0,
+    "nu": 0.0,
+    "wilson_ci": [
+      1.734723475976807e-18,
+      0.018845326377266575
+    ]
+  }
+}

@@ -1,0 +1,379 @@
+=== PAGE 1 ===
+COMMUNICATION-EFFICIENTCOOPERATIVEMULTI-AGENT
+REINFORCEMENTLEARNING UNDER ANAVERAGEBITBUDGET
+PROJECTIDEAREVIEW
+Suchith Saladi
+Roll No.: 24110313
+IIT Gandhinagar
+24110313@iitgn.ac.in
+Rohith Reddy
+Roll No.: 24110303
+IIT Gandhinagar
+rohith.marri@iitgn.ac.in
+Pathlavath Arjun
+Roll No.: 24110249
+IIT Gandhinagar
+24110249@iitgn.ac.in
+Hanook Vallapudasu
+Roll No.: 24110378
+IIT Gandhinagar
+vallapudasu.hanook@iitgn.ac.in
+ABSTRACT
+Cooperating agents such as robots or drones often need to share information while operating over
+communication links with limited capacity. This project studies how a cooperative multi-agent
+reinforcement learning (MARL) team can use a limited average communication budget. Each agent
+learns whether to transmit and, when it transmits, the precision at which to encode its message.
+We formulate communication as an expected payload-bit constraint and propose a MAPPO-based
+primal–dual training method with a learned transmission gate and quantiser. Since bandwidth-
+limited communication, message pruning, and quantisation have all been studied previously, our
+project focuses on a controlled empirical comparison: at matched communication costs, does learning
+message precision improve over learned gating with fixed precision? We will evaluate this question on
+small partially observable cooperative benchmarks and measure team return, actual communication
+cost, and episode-level budget violations. Robustness to packet drops and delay is a secondary
+experiment.
+KeywordsMulti-agent reinforcement learning · Learned communication · Constrained optimisation · Bandwidth-
+limited coordination
+1 Introduction
+Many real-world systems contain several decision makers that must coordinate even though each observes only part
+of the situation. Examples include fleets of delivery drones, warehouse robots, and sensor networks. Multi-agent
+reinforcement learning (MARL) provides methods for training such teams from experience. A common approach
+is centralised training with decentralised execution (CTDE), as used in methods such as QMIX [1] and MAPPO [2].
+Under partial observability, communication can help agents combine information and coordinate their actions. Prior
+work has explored learned communication protocols and message aggregation [3, 4, 5].
+Communication is not free in real systems: links have limited capacity, transmissions consume energy, and packets
+may be delayed or lost. Prior MARL work has addressed communication constraints through message pruning [ 6],
+communication scheduling [7], constrained event-triggered communication [ 8], and temporal message control [ 9].
+Dynamic Size Message Scheduling (DSMS) adapts message size under a bandwidth budget by retaining a variable
+number of clipped Fourier components [ 10]. CACOM also uses learned step-size quantisation in a context-aware
+communication protocol [11]. Our proposed comparison differs from DSMS in the representation decision: we vary the
+bit precision of each message entry, whereas DSMS varies the number of retained frequency components. Bandwidth
+limitation, gating, and compression are established research topics; our project will not claim them as new in themselves.
+=== PAGE 2 ===
+Communication-Efficient Cooperative MARL
+Table 1: Notation.
+Symbol Meaning
+N={1, . . . , n}Set of agents
+S,A i,O i State, action, and observation spaces of agenti
+A= ∏︁
+i Ai Joint action space;a= (a 1, . . . , an)
+P(s ′ |s,a)Transition kernel
+Ω(o|s ′)Joint observation kernel
+r(s,a)Shared team reward
+γ∈[0,1), TDiscount factor and episode horizon
+ht
+i Local history of agentiat timet
+dDimension of a message vector
+mt
+i ∈R d Raw message produced by agenti
+gt
+i ∈ {0,1}Transmission gate
+W={1,2,4,8}Allowed bit-widths per message entry
+bt
+i ∈ WSelected bit-width for agenti
+Qb Quantiser using2 b levels per entry
+p, τPacket-drop probability and channel delay
+ut
+i Aggregated message context of agenti
+BBudget in discounted-normalised payload bits per environment step (team total)
+λLagrange multiplier for the communication constraint
+ψ= (θ, ϕ)Joint action and communication policy parameters
+σϕi Communication policy of agenti
+πθi Action policy of agenti
+˜mt
+j→i Message received by agentifrom agentj
+Vω Centralised critic with parametersω
+ˆ︁CMoving-average estimate of rollout communication cost
+ˆcCommunication cost measured in one rollout
+ηλ Dual update step size
+F(B)Optimal expected return at budgetB
+ν(B)Episode-level budget violation probability
+∆rob Nonnegative return degradation under channel shift
+AUCNormalised area under a return–cost frontier
+LPrimal–dual Lagrangian objective
+rλ
+t Per-step reward including the communication-cost term
+ZT Sum of finite-horizon discount weights
+eEvaluation episode index
+Ce Discounted-normalised communication cost in episodee
+c, c min, c max Measured cost and common comparison interval
+ˆ︁F(c)Interpolated estimated return frontier at measured costc
+D,D ′ Training and shifted evaluation channel distributions
+¯CPlain undiscounted average payload bits per step
+ℓt
+i PPO log-probability contribution of communication decisions
+Instead, we will conduct a focused, matched-cost study of whether learning the message bit-width provides measurable
+value beyond learning when to transmit. Given a target payload budget, we will compare a learned gate with fixed
+precision against a learned gate combined with a learned quantiser. The primary outcome is the return–cost trade-off
+under comparable measured payload use. This question is relevant to practical system design: if variable message
+precision does not improve performance at equal cost, a simpler gate-only approach may be preferable.
+Project objectives.We will (i) implement a reproducible MAPPO communication baseline with a configurable
+payload-bit counter; (ii) train learned-gating and learned-gating-plus-quantisation variants under an average cost
+constraint; (iii) compare methods at matched measured communication costs; and (iv) as a secondary study, test
+sensitivity to packet drops and delay.
+2 Preliminaries
+Definition 1(Dec-POMDP [ 12]).A decentralised partially observable Markov decision process is a tuple G=
+⟨N,S,{A i}i∈N ,{O i}i∈N , P,Ω, r, γ, T⟩ . At time t, the environment has hidden state st; agent i receives observation
+ot
+i and chooses actiona t
+i ∈ A i. The team receives shared rewardr(s t,a t), and the state evolves according toP.
+2
+=== PAGE 3 ===
+Communication-Efficient Cooperative MARL
+Definition 2(Quantiser).For bit-width b∈ W , Qb clips each entry of m∈R d to [−1,1] and maps it to one of 2b
+uniformly spaced levels. We set message dimension d= 16 and use W={1,2,4,8} , so the largest message uses
+16·8 = 128 payload bits. Quantiser codebooks are assumed to be shared in advance. Headers, retransmissions, and
+channel-coding overhead are excluded from the accounting.
+Definition 3(Imperfect broadcast channel).A message transmitted by agent i is made available to each other agent
+with probability 1−p after delay τ; otherwise it is unavailable to that receiver. Reception events are independent
+across receivers. The environment records a broadcast’s payload cost once at its sender, regardless of the number of
+receivers. This is an abstract payload-cost model and does not model link-layer overhead or contention.
+Definition 4(Communicating policy).Agent i uses a communication policy σϕi(gt
+i , bt
+i |h t
+i) and an action policy
+πθi(at
+i |h t
+i, ut
+i). The communication policy produces message mt
+i =f ϕi(ht
+i) and selects whether to send it and its
+bit-width. The aggregated message context is ut
+i = Attn(ht
+i,{˜mt
+j→i}j̸=i). Here πg and πb are the gate and bit-width
+heads ofσ ϕi.
+Definition 5(Return and communication cost).Let ZT = ∑︁T
+t=1 γt−1. For joint parameters ψ= (θ, ϕ) , define
+expected discounted return and discounted-normalised payload cost as
+J(ψ) =E ψ
+[︄T∑︂
+t=1
+γt−1r(st,a t)
+]︄
+,(1)
+C(ψ) =E ψ
+[︄
+1
+ZT
+T∑︂
+t=1
+γt−1 ∑︂
+i∈N
+gt
+i dbt
+i
+]︄
+.(2)
+Here C is an expectation over policy and environment randomness. The same discount weights are used in J and C, so
+the per-step Lagrangian reward is consistent with the constrained objective. The budget is an expected discounted-
+normalised payload budget, not a per-episode guarantee.
+3 Problem Formulation
+Problem 1(Bit-budgeted cooperative MARL).Given team payload budgetB≥0, optimise
+F(B) = max
+ψ
+J(ψ)subject toC(ψ)≤B.(3)
+For multiplierλ≥0, the Lagrangian is
+L(ψ, λ) =J(ψ)−λ(C(ψ)−B).(4)
+We use the corresponding primal–dual updates as a practical training procedure; because neural policy optimisation is
+non-convex, we do not claim a general convergence guarantee.
+Matched-cost comparison.The primary comparison is between (i) learned gating with a fixed bit-width and (ii)
+learned gating with learned bit-width selection. The primary x-axis is the plain measured average ¯C in payload bits
+per step, which is directly interpretable. We also report discounted-normalised cost C alongside it because C is the
+constrained quantity used for training. For each method, we select operating points with approximately matched
+¯C. No-communication and full-communication policies are reference points; full communication is not treated as a
+budget-matched baseline.
+Episode-level budget violations.For each evaluation episodee, letC e =Z −1
+T
+∑︁T
+t=1 γt−1 ∑︁
+i gt
+i dbt
+i. We report
+ν(B) = Pr(C e > B),(5)
+empirically over evaluation episodes. This complements the expected-cost constraint and is not a guarantee that every
+episode meets the budget.
+Robustness measure.For a policy trained under channel distribution D and evaluated under a shifted distribution D′,
+we report both returns and the nonnegative estimated degradation
+∆rob(B) = max (0, J D(B)−J D′(B)).(6)
+The two distributions and the measured communication costs will be stated with each experiment.
+3
+=== PAGE 4 ===
+Communication-Efficient Cooperative MARL
+Summary metric.We will plot mean team return against measured average payload cost ¯C. To compare two methods,
+let cmin be the larger of their minimum measured ¯C values and cmax the smaller of their maximum measured ¯C values.
+We will linearly interpolate each estimated return–cost frontier only on this shared interval and may report
+AUCoverlap = 1
+cmax −c min
+∫︂cmax
+cmin
+ˆ︁F(c)dc, c= ¯C.(7)
+This summary is secondary to the underlying return–cost curves and is only reported whenc max > c min.
+4 Proposed Solutions
+4.1 Method
+Backbone.We use MAPPO [ 2] with a centralised critic during training and decentralised actors during execution.
+A communication module produces sender messages, which are quantised and passed through the simulated channel
+before being aggregated by receiving agents.
+Gate and precision decisions.The gate gt
+i and, in the learned-precision variant, bit-width bt
+i ∈ W are sampled
+as categorical PPO actions, and their log-probabilities enter the PPO clipped objective. We mask the bit-width log-
+probability when the gate is closed, using ℓt
+i = logπ g(gt
+i |h t
+i) +g t
+i logπ b(bt
+i |h t
+i), so an unused bit-width choice
+adds no policy-gradient noise. The continuous message mt
+i =f ϕi(ht
+i) is trained by backpropagating the receiving
+agents’ PPO policy loss through their message aggregation to the sender. During PPO updates, we recompute sender
+messages from stored histories and replay the sampled gates, bit-widths, and channel delivery outcomes so this gradient
+path is retained. Quantisation uses a straight-through estimator only for rounding inside Qb [13]. We do not use
+Gumbel–Softmax relaxations for gate or bit-width decisions.
+Primal–dual budget control.The policy is updated using the MAPPO objective with per-step penalised reward
+rλ
+t =r t −λ 1
+ZT
+∑︂
+i∈N
+gt
+i dbt
+i.(8)
+The multiplier is updated from a moving average ˆ︁Cof discounted-normalised rollout cost:
+λ←[λ+η λ( ˆ︁C−B)] +.(9)
+This is an empirical constraint-control method; we will report actual costs and violations rather than assume it enforces
+every rollout’s budget.
+Algorithm 1Primal–dual MAPPO with communication gate and optional quantiser
+1:Initialise policy parametersθ, ϕ, criticV ω, andλ←0
+2:foreach training iterationdo
+3: Roll out episodes; sample gate and (when enabled) bit-width as categorical PPO actions; mask bit-width
+log-probability when gate is closed
+4:Quantise and transmit messages through the simulated channel; select actions
+5:Record return and discounted-normalised costˆc=Z −1
+T
+∑︁
+t γt−1 ∑︁
+i gt
+i dbt
+i
+6:Form penalised rewardsr λ
+t =r t −λZ −1
+T
+∑︁
+i gt
+i dbt
+i
+7: Recompute sender messages from stored histories and replay sampled communication/channel outcomes in
+PPO minibatches
+8: Update PPO policies and critic; backpropagate receiver policy loss through message aggregation to sender
+encoders using an STE for quantiser rounding
+9:Update moving-average cost ˆ︁Candλ←[λ+η λ( ˆ︁C−B)] +
+10:end for
+4.2 Baselines and ablations
+•No communication:MAPPO without inter-agent messages.
+•Full communication:always transmit full-precision messages; reference point without a matched-budget claim.
+• Matched-cost periodic/random gating:fixed schedules calibrated to approximately match the learned methods’
+measured average costs.
+4
+=== PAGE 5 ===
+Communication-Efficient Cooperative MARL
+• Learned gate, fixed precision:evaluate each fixed width in {1,2,4,8} and compare with the best fixed-width
+return–cost frontier.
+•Learned gate and learned precision:proposed method.
+Where feasible, we will also report a soft cost-penalty baseline, with its coefficient tuned on a validation set and its
+realised cost reported. We will not select its coefficient using test results.
+4.3 Environments and metrics
+We will use a partially observable setup: MPE observations will be restricted by an observation radius, and/or Level-
+Based Foraging will use a limited sight range [ 14, 15]. In Phase 1, we will run two screening checks. First, full
+communication must outperform no communication by at least 0.10 on a task score normalised to [0,1] using fixed,
+documented endpoints, and the paired-seed 95% confidence interval for the difference must exclude zero. Second, we
+will run full communication at each fixed width in {1,2,4,8} . If these precision-screening returns are effectively flat
+(all pairwise differences below 0.10 normalised score), learned precision will be deprioritised and the finding reported;
+it will not be presented as a promising improvement. We will report team return, discounted-normalised cost, plain
+average bits per step ¯C=T −1 ∑︁
+t
+∑︁
+i gt
+i dbt
+i, episode violation rate, and confidence intervals across at least five random
+seeds where compute permits. The primary plots compare return against measured cost, not merely nominal target
+budget.
+4.4 Research questions and planned results
+RQ1 Does learned precision help at matched cost?Compare learned gating plus learned quantisation with the
+best return–cost frontier across fixed widths {1,2,4,8} . Planned output: return–cost curves, confidence
+intervals, and selected bit-width summaries. A null result, where learned precision does not improve over
+the best fixed-width baseline, will be reported as a valid finding.
+RQ2 Can the target expected budget be reached reliably?Measure discounted-normalised expected cost and
+episode-level violation rate across several target budgets. Planned output: cost and violation plots for the
+primal–dual policy and matched-cost baselines.
+RQ3 How sensitive are results to channel faults?As a secondary experiment, evaluate packet drops and
+delays, including test conditions that differ from training. Planned output: returns, measured costs, and
+nonnegative degradation under each stated channel condition.
+Stretch goals (time permitting):a budget-conditioned single policy and one SMACv2 map. These will not be required
+for the primary project conclusion.
+4.5 Timeline and risks
+Table 2: Planned project phases.
+Phase Deliverable
+1 Partially observable MAPPO baseline, channel, payload counter, communication-value go/no-go, and full-
+communication fixed-width precision screen
+2 Learned gate and primal–dual budget control; matched-cost reference baselines
+3 Learned quantiser and gate-only versus gate-plus-quantiser comparison
+4 Multi-seed evaluation, cost and violation analysis; channel robustness if time permits
+5 Final plots, related-work review, and report
+The main risks are unstable learning with discrete communication choices, integration effort, and compute limits. We
+will mitigate these by first validating the partially observable environment and channel and applying the go/no-go check,
+then adding the gate, and only then adding learned precision. The core deliverable is the matched-cost comparison;
+robustness and larger benchmarks are secondary.
+5 Contribution
+•Suchith Saladi (24110313):MAPPO backbone, partially observable environment integration, go/no-go check, and
+communication-channel / payload-cost implementation.
+5
+=== PAGE 6 ===
+Communication-Efficient Cooperative MARL
+•Rohith Reddy (24110303):learned gating, primal–dual budget control, and matched-cost schedule baselines.
+• Pathlavath Arjun (24110249):quantiser and categorical bit-width policy, fixed-width sweep, and precision ablations.
+• Hanook Vallapudasu (24110378):evaluation pipeline, return–cost plots, violation statistics, and report assembly
+coordination.
+• All members:literature review, code review, multi-seed evaluation, and writing and review of assigned report
+sections.
+References
+[1] Tabish Rashid, Mikayel Samvelyan, Christian Schroeder de Witt, Gregory Farquhar, Jakob N. Foerster, and
+Shimon Whiteson. QMIX: Monotonic value function factorisation for deep multi-agent reinforcement learning.
+InProceedings of the International Conference on Machine Learning (ICML), 2018.
+[2] Chao Yu, Akash Velu, Eugene Vinitsky, Jiaxuan Gao, Yu Wang, Alexandre Bayen, and Yi Wu. The surprising
+effectiveness of PPO in cooperative multi-agent games. InAdvances in Neural Information Processing Systems:
+Datasets and Benchmarks Track, 2022.
+[3] Sainbayar Sukhbaatar, Arthur Szlam, and Rob Fergus. Learning multiagent communication with backpropagation.
+InAdvances in Neural Information Processing Systems (NeurIPS), 2016.
+[4] Amanpreet Singh, Tushar Jain, and Sainbayar Sukhbaatar. Learning when to communicate at scale in multiagent
+cooperative and competitive tasks. InInternational Conference on Learning Representations (ICLR), 2019.
+[5] Abhishek Das, Théophile Gervet, Joshua Romoff, Dhruv Batra, Devi Parikh, Mike Rabbat, and Joelle Pineau.
+TarMAC: Targeted multi-agent communication. InProceedings of the International Conference on Machine
+Learning (ICML), 2019.
+[6] Hangyu Mao, Zhengchao Zhang, Zhen Xiao, Zhibo Gong, and Yan Ni. Learning agent communication under
+limited bandwidth by message pruning. InProceedings of the AAAI Conference on Artificial Intelligence,
+volume 34, pages 5142–5149, 2020.
+[7] Daewoo Kim, Sangwoo Moon, David Hostallero, Wan Ju Kang, Taeyoung Lee, Kyunghwan Son, and Yung Yi.
+Learning to schedule communication in multi-agent reinforcement learning. InInternational Conference on
+Learning Representations (ICLR), 2019.
+[8] Guangzheng Hu, Yuanheng Zhu, Dongbin Zhao, Mengchen Zhao, and Jianye Hao. Event-triggered communication
+network with limited-bandwidth constraint for multi-agent reinforcement learning.IEEE Transactions on Neural
+Networks and Learning Systems, 34(8):3966–3978, 2023.
+[9] Sai Qian Zhang, Qi Zhang, and Jieyu Lin. Succinct and robust multi-agent communication with temporal message
+control. InAdvances in Neural Information Processing Systems (NeurIPS), volume 33, pages 17271–17282, 2020.
+[10] Qingshuang Sun, Denis Steckelmacher, Yuan Yao, Ann Nowé, and Raphaël Avalos. Dynamic size message
+scheduling for multi-agent communication under limited bandwidth.IEEE Transactions on Mobile Computing,
+23(12):15080–15097, 2024.
+[11] Xinran Li and Jun Zhang. Context-aware communication for multi-agent reinforcement learning. InProceedings
+of the 23rd International Conference on Autonomous Agents and Multiagent Systems (AAMAS), pages 1156–1164,
+2024.
+[12] Frans A. Oliehoek and Christopher Amato.A Concise Introduction to Decentralized POMDPs. Springer, 2016.
+[13] Yoshua Bengio, Nicholas Léonard, and Aaron Courville. Estimating or propagating gradients through stochastic
+neurons for conditional computation.arXiv preprint arXiv:1308.3432, 2013.
+[14] Ryan Lowe, Yi Wu, Aviv Tamar, Jean Harb, Pieter Abbeel, and Igor Mordatch. Multi-agent actor-critic for mixed
+cooperative-competitive environments. InAdvances in Neural Information Processing Systems (NeurIPS), 2017.
+[15] Georgios Papoudakis, Filippos Christianos, Lukas Schaefer, and Stefano V . Albrecht. Benchmarking multi-agent
+deep reinforcement learning algorithms in cooperative tasks. InProceedings of the NeurIPS Datasets and
+Benchmarks Track, 2021.
+6

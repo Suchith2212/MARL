@@ -1,0 +1,60 @@
+baselines:
+  heuristic:
+    mean: -10.715483041206507
+    norm_score: 0.0
+    std: 5.8968224309117625
+  oracle:
+    mean: 8.70009790207835
+    norm_score: 1.0
+    std: 2.7316217016287063
+  random:
+    mean: -16.553227922586064
+    norm_score: 0.0
+    std: 6.551666098649544
+check1:
+  ci_95_high: 0.0
+  ci_95_low: 0.0
+  full_comm_b8_scores:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  mean_difference: 0.0
+  no_comm_scores:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  paired_differences:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  passed: false
+check2:
+  flat: true
+  learned_precision_deprioritised: true
+  linear_trend:
+    p_val: .nan
+    r_val: .nan
+    significant_05: false
+    slope: 0.0
+  max_pairwise_diff: 0.0
+  significance_8_vs_1:
+    ci_high: 0.0
+    ci_low: 0.0
+    mean_diff: 0.0
+    p_value: .nan
+    significant_05: false
+    t_stat: .nan
+  width_scores:
+    '1': 0.0
+    '2': 0.0
+    '4': 0.0
+    '8': 0.0
+endpoints:
+  R_MAX: 8.70009790207835
+  R_MIN: -10.715483041206507

@@ -1,0 +1,20 @@
+{
+  "mode": "periodic",
+  "bw": 4,
+  "budget": 32,
+  "seed": 46,
+  "eval": {
+    "return_mean": -4.029437065124512,
+    "return_std": 11.157845497131348,
+    "cost_mean": 33.279998779296875,
+    "cost_std": 0.0,
+    "cost_error": 0.039999961853027344,
+    "score_lead": 0.8635523686968322,
+    "violation_count": 200,
+    "nu": 1.0,
+    "wilson_ci": [
+      0.9811546736227335,
+      1.0
+    ]
+  }
+}
